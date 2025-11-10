@@ -1,48 +1,67 @@
 """
-Database Schemas
+Database Schemas for Legas Yasin Portfolio
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
+Each Pydantic model represents a MongoDB collection. The collection name is the
+lowercased class name. Example: class User -> collection "user".
 
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+These schemas are read by the internal database viewer via GET /schema and are
+used for validation when creating/editing documents.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, HttpUrl, EmailStr
+from typing import List, Optional, Dict
 
-# Example schemas (replace with your own):
 
-class User(BaseModel):
+class PortfolioProfile(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Portfolio profile information
+    Collection: "portfolioprofile"
     """
     name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    role: str = Field(..., description="Primary title/role")
+    bio: str = Field(..., description="Short biography for the about section")
+    location: Optional[str] = Field(None, description="City, Country")
+    avatar: Optional[HttpUrl] = Field(None, description="URL to avatar/profile image")
+    socials: Dict[str, Optional[str]] = Field(
+        default_factory=lambda: {
+            "github": None,
+            "twitter": None,
+            "linkedin": None,
+            "website": None,
+        },
+        description="Map of social platform -> URL",
+    )
+    skills: List[str] = Field(default_factory=list, description="Key skills/tags")
+
+
+class PortfolioProject(BaseModel):
+    """
+    Project cards displayed on the site
+    Collection: "portfolioproject"
+    """
+    title: str = Field(..., description="Project title")
+    description: str = Field(..., description="Short description")
+    image: Optional[str] = Field(None, description="Public image path or URL")
+    tags: List[str] = Field(default_factory=list, description="Tech tags")
+    url: Optional[HttpUrl] = Field(None, description="Live site URL")
+    repo: Optional[HttpUrl] = Field(None, description="Repository URL")
+
+
+class ContactMessage(BaseModel):
+    """
+    Messages submitted from the contact form
+    Collection: "contactmessage"
+    """
+    name: str = Field(..., description="Sender name")
+    email: EmailStr = Field(..., description="Sender email")
+    message: str = Field(..., min_length=3, max_length=5000, description="Message body")
+
+
+# Example schemas (kept for reference, not used by the portfolio app)
+class User(BaseModel):
+    name: str
+    email: str
 
 class Product(BaseModel):
-    """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
-    """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
-
-# Add your own schemas here:
-# --------------------------------------------------
-
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+    title: str
+    price: float
